@@ -9,9 +9,16 @@
     "dev": "tsc -b && node ./dist/index.js"
   },
   "dependencies": {
+    "@types/jsonwebtoken": "^9.0.8",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "@types/express": "^5.0.0",
-    "express": "^4.21.2"
+    "@repo/common": "workspace:*",
+    "@repo/db": "workspace:*"
   },
   "keywords": [],
   "author": "",
