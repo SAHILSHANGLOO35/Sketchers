@@ -13,20 +13,18 @@ import jwt from "jsonwebtoken";
 import { middleware } from "./middleware";
 
 const app = express();
-
 app.use(express.json());
 
-export interface RequestCustom extends Request
-{
+export interface RequestCustom extends Request {
     body: {
         email: string;
         password: string;
-    }
+    };
 }
 
 app.post("/signup", async (req, res) => {
-    const data = UserSignupSchema.safeParse(req.body);
-    if (!data.success) {
+    const parsedData = UserSignupSchema.safeParse(req.body);
+    if (!parsedData.success) {
         res.status(403).json({
             message: "Incorrect inputs",
         });
@@ -34,18 +32,19 @@ app.post("/signup", async (req, res) => {
     }
 
     try {
-        const { username, email, password } = data.data;
+        const { username, email, password } = parsedData.data;
 
         const user = await prismaClient.user.findUnique({
             where: {
-                email
-            }
+                email,
+            },
         });
 
-        if(user) {
+        if (user) {
             res.status(403).json({
-                message: "User already exits!"
+                message: "User with this username or email already exists!",
             });
+            return;
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -68,8 +67,8 @@ app.post("/signup", async (req, res) => {
 });
 
 app.post("/signin", async (req: RequestCustom, res: any) => {
-    const data = UserSigninSchema.safeParse(req.body);
-    if (!data.success) {
+    const parsedData = UserSigninSchema.safeParse(req.body);
+    if (!parsedData.success) {
         res.status(403).json({
             message: "Incorrect inputs",
         });
@@ -77,7 +76,7 @@ app.post("/signin", async (req: RequestCustom, res: any) => {
     }
 
     try {
-        const { email, password } = data.data;
+        const { email, password } = parsedData.data;
 
         const user = await prismaClient.user.findUnique({
             where: {
@@ -86,17 +85,19 @@ app.post("/signin", async (req: RequestCustom, res: any) => {
         });
 
         if (!user) {
-            return res.status(403).json({
+            res.status(403).json({
                 mesage: "User not found",
             });
+            return;
         }
 
         const passwordMatch = await bcrypt.compare(password, user?.password);
 
         if (!passwordMatch) {
-            return res.status(403).json({
+            res.status(403).json({
                 message: "Invalid credentials",
             });
+            return;
         }
 
         const token = jwt.sign(
@@ -107,7 +108,7 @@ app.post("/signin", async (req: RequestCustom, res: any) => {
         );
 
         res.json({
-            token
+            token,
         });
     } catch (error) {
         console.error(error);
@@ -117,15 +118,48 @@ app.post("/signin", async (req: RequestCustom, res: any) => {
     }
 });
 
-app.post("/create-room", middleware, (req, res) => {
-    const data = RoomSchema.safeParse(req.body);
-    if (!data.success) {
+app.post("/create-room", middleware, async (req, res) => {
+    const parsedData = RoomSchema.safeParse(req.body);
+    if (!parsedData.success) {
         res.status(403).json({
             message: "Incorrect inputs",
         });
         return;
     }
-    res.json({});
+
+    try {
+        // @ts-ignore
+        const userId = req.userId;
+
+        const room = await prismaClient.room.findFirst({
+            where: {
+                slug: parsedData.data.roomName,
+            },
+        });
+
+        if (room) {
+            res.status(403).json({
+                message: "Room with this name already exists!",
+            });
+            return;
+        }
+
+        const newRoom = await prismaClient.room.create({
+            data: {
+                slug: parsedData.data.roomName,
+                adminId: userId,
+            },
+        });
+
+        res.status(200).json({
+            roomId: newRoom.id,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Some internal error while creating room",
+        });
+    }
 });
 
 app.listen(process.env.PORT || 3000);
