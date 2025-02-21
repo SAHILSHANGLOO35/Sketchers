@@ -162,4 +162,26 @@ app.post("/create-room", middleware, async (req, res) => {
     }
 });
 
+app.get("/chats/:roomId", async (req: any, res: any) => {
+    try {
+        const roomId = Number(req.params.roomId);
+
+        if (isNaN(roomId) || roomId <= 0) {
+            return res.status(400).json({ error: "Invalid room ID" });
+        }
+
+        const messages = await prismaClient.chat.findMany({
+            where: { roomId },
+            orderBy: { id: "desc" },
+            take: 50
+        });
+
+        res.status(200).json({ messages });
+    } catch (error) {
+        console.error("Error fetching chats:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+
 app.listen(process.env.PORT || 3000);
