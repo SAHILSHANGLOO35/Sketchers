@@ -14,7 +14,7 @@ interface User {
     ws: WebSocket;
 }
 
-const users: User[] = [];
+let users: User[] = [];
 
 function checkUser(token: string): string | null {
     try {
@@ -29,16 +29,11 @@ function checkUser(token: string): string | null {
     }
 }
 
-const wss = new WebSocketServer({ port: 8080 });
+const wss = new WebSocketServer({ port: 9000 });
 
 wss.on("connection", function connection(ws, req: RequestCustom) {
     try {
-        const url = req.url;
-        if (!url) {
-            ws.close();
-            return;
-        }
-        
+        const url = req.url || "";
         const queryParams = new URLSearchParams(url.split("?")[1]);
         const token = queryParams.get("token") || "";
         const userId = checkUser(token);
@@ -48,43 +43,45 @@ wss.on("connection", function connection(ws, req: RequestCustom) {
             return;
         }
 
-        users.push({
-            userId,
-            rooms: [],
-            ws,
-        });
+        // Remove old connection if the user reconnects
+        users = users.filter((user) => user.userId !== userId);
+        users.push({ userId, rooms: [], ws });
 
         ws.on("message", async function message(data) {
             try {
-                const parsedData = JSON.parse(data as unknown as string);
+                const parsedData = JSON.parse(data.toString());
+                console.log("Parsed JSON:", parsedData);
+
+                const user = users.find((u) => u.ws === ws);
+                if (!user) return;
 
                 if (parsedData.type === "join_room") {
-                    const user = users.find((user) => user.ws === ws);
-                    user?.rooms.push(parsedData.roomId);
+                    user.rooms.push(parsedData.roomId);
+                    console.log(`User ${user.userId} joined room: ${parsedData.roomId}`);
                 }
 
                 if (parsedData.type === "leave_room") {
-                    const user = users.find((user) => user.ws === ws);
-                    if (!user) return;
-                    user.rooms = user.rooms.filter((room) => room !== parsedData.room);
+                    user.rooms = user.rooms.filter((room) => room !== parsedData.roomId);
                 }
 
                 if (parsedData.type === "chat") {
                     const { roomId, message } = parsedData;
+                    console.log(`Broadcasting message to room ${roomId}`);
+                    console.log("Current users and their rooms:", users.map(u => ({ userId: u.userId, rooms: u.rooms })));
 
                     await prismaClient.chat.create({
                         data: {
                             roomId,
                             message,
-                            userId
+                            userId: user.userId
                         }
                     });
+                    console.log(`Broadcasting message to room: ${roomId}`);
 
-                    users.forEach((user) => {
-                        if (user.rooms.includes(roomId)) {
-                            user.ws.send(
-                                JSON.stringify({ type: "chat", message, roomId })
-                            );
+                    users.forEach((u) => {
+                        if (u.rooms.includes(roomId)) {
+                            console.log(`Sending message to ${u.userId}`);
+                            u.ws.send(JSON.stringify({ type: "chat", message, roomId }));
                         }
                     });
                 }
@@ -92,6 +89,12 @@ wss.on("connection", function connection(ws, req: RequestCustom) {
                 console.error("Error processing message:", error);
             }
         });
+
+        ws.on("close", () => {
+            users = users.filter((u) => u.ws !== ws);
+            console.log(`User ${userId} disconnected`);
+        });
+
     } catch (error) {
         console.error("WebSocket connection error:", error);
         ws.close();
