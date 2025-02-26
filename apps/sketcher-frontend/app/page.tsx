@@ -147,7 +147,7 @@ export default function Page() {
               </div>
               <div className="group relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-blue-400 opacity-0 blur-xl transition-opacity group-hover:opacity-20" />
-                <div className="relative flex flex-col items-center space-y-4 rounded-lg border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-transform hover:scale-105">
+                <div className="relative flex flex-col items-center space-y-4 rounded-lg border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-transform hover:scale-105 min-h-[205px]">
                   <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-violet-600/10 ring-1 ring-violet-600/25">
                     <Share2 className="h-6 w-6 text-violet-400" />
                   </div>
