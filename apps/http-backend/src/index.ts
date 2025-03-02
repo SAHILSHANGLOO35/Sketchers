@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import cors from "cors";
 dotenv.config({ path: "./.env" });
 const JWT_SECRET = process.env.JWT_SECRET;
 import {
@@ -14,6 +15,7 @@ import { middleware } from "./middleware";
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 export interface RequestCustom extends Request {
     body: {
