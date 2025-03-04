@@ -1,6 +1,5 @@
 import { BACKEND_URL } from "@/config";
 import axios from "axios";
-import { start } from "repl";
 
 type Shape = | {
     type: "rect"
