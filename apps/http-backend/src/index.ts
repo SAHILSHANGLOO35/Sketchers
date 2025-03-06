@@ -164,6 +164,25 @@ app.post("/create-room", middleware, async (req, res) => {
     }
 });
 
+app.get("/all-rooms", middleware, async(req, res) => {
+    try {
+        // @ts-ignore
+        const userId = req.userId;
+
+        const rooms = await prismaClient.room.findMany({
+            where: {
+                adminId: userId,
+            },
+        });
+        res.status(200).json({ rooms });
+    } catch (error) {
+        console.error("Error fetching rooms: ", error);
+        res.status(500).json({
+            message: "Internal server error"
+        });
+    }
+})
+
 app.get("/chats/:roomId", async (req: any, res: any) => {
     try {
         const roomId = Number(req.params.roomId);
