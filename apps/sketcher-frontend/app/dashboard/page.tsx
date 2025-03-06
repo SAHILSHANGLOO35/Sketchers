@@ -1,14 +1,15 @@
 "use client";
-import { BACKEND_URL, WS_URL } from "@/config";
+import { BACKEND_URL } from "@/config";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PlusCircle, Loader2, Grid, ChevronRight } from "lucide-react";
-import Link from "next/link";
+import Squares from "../../components/Squares";
 
 export default function Dashboard() {
     const [rooms, setRooms] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [creatingRoom, setCreatingRoom] = useState(false);
 
     const router = useRouter();
 
@@ -36,37 +37,60 @@ export default function Dashboard() {
             }
             setLoading(false);
         };
+
         fetchRooms();
     }, []);
 
-    return (
-        <div className="min-h-screen bg-black text-white">
-            {/* Background gradient */}
-            <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-r from-blue-900/20 to-purple-900/20 blur-3xl opacity-20 -z-10"></div>
+    const handleCreateRoom = async () => {
+        setCreatingRoom(true);
+        await router.push("/create-room");
+        setCreatingRoom(false);
+    };
 
-            <div className="max-w-7xl mx-auto p-6 sm:p-8">
+    return (
+        <div className="w-screen h-screen flex justify-center items-center relative bg-black">
+            <div className="absolute inset-0 overflow-hidden">
+                <Squares
+                    speed={0.3}
+                    squareSize={40}
+                    direction="diagonal"
+                    borderColor="rgba(75, 75, 75, 1)"
+                    hoverFillColor="rgba(40, 40, 40, 0.8)"
+                />
+            </div>
+
+            <div className="max-w-7xl top-0 left-0 right-0 mx-auto p-6 sm:p-8 absolute z-10">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
                     <div>
                         <h1 className="text-4xl font-bold tracking-tight text-white mb-1">
                             Your Rooms
                         </h1>
-                        <p className="text-gray-500">
+                        <p className="text-zinc-400">
                             Manage and access your virtual spaces
                         </p>
                     </div>
                     <button
-                        onClick={() => router.push("/create-room")}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-lg transition-all duration-200 shadow-lg shadow-blue-800/30"
+                        onClick={handleCreateRoom}
+                        disabled={creatingRoom}
+                        className={`flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-5 py-3 rounded-lg transition-all duration-200 shadow-lg border border-zinc-700 hover:border-zinc-600 ${
+                            creatingRoom ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
                     >
-                        <PlusCircle size={16} />
-                        <span className="font-medium">Create New Room</span>
+                        {creatingRoom ? (
+                            <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                            <PlusCircle size={16} />
+                        )}
+                        <span className="font-medium">
+                            {creatingRoom ? "Creating..." : "Create New Room"}
+                        </span>
                     </button>
                 </div>
 
                 {loading ? (
                     <div className="flex flex-col items-center justify-center h-64 mt-8">
-                        <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />
-                        <span className="text-gray-400">
+                        <Loader2 className="w-10 h-10 text-zinc-400 animate-spin mb-4" />
+                        <span className="text-zinc-500">
                             Loading your rooms...
                         </span>
                     </div>
@@ -74,8 +98,8 @@ export default function Dashboard() {
                     <>
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-2">
-                                <Grid size={18} className="text-gray-400" />
-                                <span className="text-sm text-gray-400 font-medium">
+                                <Grid color="#d4d4d8" size={18} className="text-zinc-500" />
+                                <span className="text-sm text-zinc-300 font-medium">
                                     {rooms.length}{" "}
                                     {rooms.length === 1 ? "Room" : "Rooms"}{" "}
                                     Available
@@ -88,35 +112,28 @@ export default function Dashboard() {
                                 <div
                                     // @ts-ignore
                                     key={room.id}
-                                    onClick={() =>
-                                        // @ts-ignore
-                                        router.push(`/canvas/${room.id}`)
-                                    }
-                                    className="bg-gray-950 border border-gray-800 rounded-xl overflow-hidden transition-all duration-300 hover:border-blue-700 hover:shadow-lg hover:shadow-blue-900/20 cursor-pointer group"
+                                    // @ts-ignore
+                                    onClick={() => router.push(`/canvas/${room.id}`)}
+                                    className="bg-zinc-900/80 backdrop-blur-md border border-white/20 rounded-xl overflow-hidden transition-all duration-300 hover:border-zinc-700 hover:shadow-lg hover:shadow-black/20 cursor-pointer group"
                                 >
                                     <div className="px-6 py-5">
                                         <div className="flex items-center justify-between mb-4">
-                                            <div className="bg-blue-600/20 rounded-full px-3 py-1">
-                                                <span className="text-xs font-medium text-blue-400">
+                                            <div className="bg-zinc-800 rounded-full px-3 py-1">
+                                                <span className="text-xs font-medium text-zinc-400">
                                                     Room
                                                 </span>
                                             </div>
-                                            {/* <span className="text-xs text-gray-500">
-                                                ID:{" "}
-                                                {room.id?.substring(0, 8) ||
-                                                    "N/A"}
-                                            </span> */}
                                         </div>
-
-                                        <h2 className="text-xl font-bold text-white mb-2 truncate group-hover:text-blue-400 transition-colors">
+                                        
+                                        <h2 className="text-xl font-bold text-white mb-2 truncate group-hover:text-zinc-300 transition-colors">
+                                            {/* @ts-ignore */}
                                             {room.slug}
                                         </h2>
 
-                                        <p className="text-gray-500 text-sm mb-6">
+                                        <p className="text-zinc-500 text-sm mb-6">
                                             Created on:{" "}
-                                            {new Date(
-                                                room.createdAt
-                                            ).toLocaleDateString(undefined, {
+                                            {/* @ts-ignore */}
+                                            {new Date(room.createdAt).toLocaleDateString(undefined, {
                                                 year: "numeric",
                                                 month: "short",
                                                 day: "numeric",
@@ -124,12 +141,9 @@ export default function Dashboard() {
                                         </p>
 
                                         <div className="flex justify-end mt-2">
-                                            <div className="flex items-center text-blue-500 text-sm font-medium transition-all group-hover:translate-x-1">
+                                            <div className="flex items-center text-zinc-400 text-sm font-medium transition-all group-hover:translate-x-1 group-hover:text-white">
                                                 <span>Enter Room</span>
-                                                <ChevronRight
-                                                    size={16}
-                                                    className="ml-1"
-                                                />
+                                                <ChevronRight size={16} className="ml-1" />
                                             </div>
                                         </div>
                                     </div>
@@ -138,20 +152,20 @@ export default function Dashboard() {
                         </div>
                     </>
                 ) : (
-                    <div className="flex flex-col items-center justify-center bg-gray-950 border border-gray-800 rounded-xl py-16 px-8 mt-8 text-center">
-                        <div className="rounded-full bg-blue-900/20 p-4 mb-4">
-                            <PlusCircle size={28} className="text-blue-400" />
+                    <div className="flex flex-col items-center justify-center bg-zinc-900/80 backdrop-blur-md border border-zinc-800 rounded-xl py-16 px-8 mt-8 text-center">
+                        <div className="rounded-full bg-zinc-800 p-4 mb-4">
+                            <PlusCircle size={28} className="text-zinc-400" />
                         </div>
                         <h3 className="text-xl font-bold text-white mb-2">
                             No Rooms Found
                         </h3>
-                        <p className="text-gray-500 mb-6 max-w-md">
+                        <p className="text-zinc-500 mb-6 max-w-md">
                             Create your first room to get started with your
                             virtual spaces
                         </p>
                         <a
                             href="/create-room"
-                            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg transition-all duration-200 font-medium"
+                            className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-6 py-3 rounded-lg transition-all duration-200 font-medium border border-zinc-700 hover:border-zinc-600"
                         >
                             <PlusCircle size={16} />
                             <span>Create Your First Room</span>
