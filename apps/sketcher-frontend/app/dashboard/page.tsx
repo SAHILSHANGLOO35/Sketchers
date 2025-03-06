@@ -27,8 +27,6 @@ export default function Dashboard() {
                     },
                 });
 
-                console.log("API Response:", res.data);
-
                 const data = res.data;
                 if (data) {
                     setRooms(data.rooms);
