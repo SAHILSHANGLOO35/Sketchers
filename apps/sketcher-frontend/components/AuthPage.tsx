@@ -61,7 +61,7 @@ export function AuthPage({ isSignin }: { isSignin: boolean }) {
             <div className="relative z-10 max-w-md w-full px-8 py-10 bg-zinc-900/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 transform transition-all duration-300 hover:shadow-zinc-800/50">
                 <div className="flex flex-col items-center mb-8">
                     <h1 className="text-3xl font-bold text-white mb-2">
-                        {isSignin ? "Welcome Back" : "Join SKETCHER"}
+                        {isSignin ? "Welcome Back" : "Join SKETCHERS"}
                     </h1>
                     <div className="w-16 h-1 bg-zinc-700 rounded-full"></div>
                 </div>
