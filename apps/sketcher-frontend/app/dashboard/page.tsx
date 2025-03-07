@@ -98,7 +98,11 @@ export default function Dashboard() {
                     <>
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-2">
-                                <Grid color="#d4d4d8" size={18} className="text-zinc-500" />
+                                <Grid
+                                    color="#d4d4d8"
+                                    size={18}
+                                    className="text-zinc-500"
+                                />
                                 <span className="text-sm text-zinc-300 font-medium">
                                     {rooms.length}{" "}
                                     {rooms.length === 1 ? "Room" : "Rooms"}{" "}
@@ -112,8 +116,10 @@ export default function Dashboard() {
                                 <div
                                     // @ts-ignore
                                     key={room.id}
-                                    // @ts-ignore
-                                    onClick={() => router.push(`/canvas/${room.id}`)}
+                                    onClick={() =>
+                                        // @ts-ignore
+                                        router.push(`/canvas/${room.id}`)
+                                    }
                                     className="bg-zinc-900/80 backdrop-blur-md border border-white/20 rounded-xl overflow-hidden transition-all duration-300 hover:border-zinc-700 hover:shadow-lg hover:shadow-black/20 cursor-pointer group"
                                 >
                                     <div className="px-6 py-5">
@@ -124,16 +130,18 @@ export default function Dashboard() {
                                                 </span>
                                             </div>
                                         </div>
-                                        
+
                                         <h2 className="text-xl font-bold text-white mb-2 truncate group-hover:text-zinc-300 transition-colors">
                                             {/* @ts-ignore */}
                                             {room.slug}
                                         </h2>
 
                                         <p className="text-zinc-500 text-sm mb-6">
-                                            Created on:{" "}
-                                            {/* @ts-ignore */}
-                                            {new Date(room.createdAt).toLocaleDateString(undefined, {
+                                            Created on: 
+                                            {new Date(
+                                                // @ts-ignore
+                                                room.createdAt
+                                            ).toLocaleDateString(undefined, {
                                                 year: "numeric",
                                                 month: "short",
                                                 day: "numeric",
@@ -143,7 +151,10 @@ export default function Dashboard() {
                                         <div className="flex justify-end mt-2">
                                             <div className="flex items-center text-zinc-400 text-sm font-medium transition-all group-hover:translate-x-1 group-hover:text-white">
                                                 <span>Enter Room</span>
-                                                <ChevronRight size={16} className="ml-1" />
+                                                <ChevronRight
+                                                    size={16}
+                                                    className="ml-1"
+                                                />
                                             </div>
                                         </div>
                                     </div>
