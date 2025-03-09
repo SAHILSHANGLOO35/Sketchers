@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation"; // Import router for navigation
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Pencil, Shapes, Share2, Users2, Sparkles, ArrowRight, Zap, Code, BookOpen, PenTool, Layers, PanelRight, Palette, RefreshCw } from "lucide-react";
 import Squares from "../components/Squares";
@@ -29,7 +29,6 @@ export default function Page() {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    // Function to handle click on creation buttons
     const handleCreateClick = (e: any) => {
         e.preventDefault();
         if (isLoggedIn) {
@@ -92,12 +91,16 @@ export default function Page() {
                             How it works ?
                         </Link>
                         {isLoggedIn ? (
-                            <Link
-                                href="/dashboard"
-                                className="text-sm font-medium text-zinc-400 hover:text-white transition-colors hover:underline underline-offset-4 decoration-zinc-500"
+                            <div
+                                // href="/dashboard"
+                                className="cursor-pointer text-sm font-medium text-zinc-400 hover:text-white transition-colors hover:underline underline-offset-4 decoration-zinc-500"
+                                onClick={() => {
+                                    localStorage.removeItem('token')
+                                    setIsLoggedIn(false)
+                                }}
                             >
-                                Dashboard
-                            </Link>
+                                Logout
+                            </div>
                         ) : (
                             <Link
                                 href="/signin"
@@ -143,6 +146,18 @@ export default function Page() {
                                         <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                                     </Button>
                                     {!isLoggedIn && (
+                                        <Link href="/signup">
+                                            <Button
+                                                size="lg"
+                                                variant="outline"
+                                                className="border-zinc-700 text-white hover:bg-zinc-800/80 backdrop-blur-sm"
+                                            >
+                                                Sign up
+                                            </Button>
+                                        </Link>
+                                    )}
+
+                                    {isLoggedIn && (
                                         <Link href="/signup">
                                             <Button
                                                 size="lg"
