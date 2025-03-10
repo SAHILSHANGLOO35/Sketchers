@@ -76,8 +76,12 @@ export class Game {
 
             if (message.type === "chat") {
                 const parsedShape = JSON.parse(message.message);
-                this.existingShapes.push(parsedShape.shape);
-                this.clearCanvas();
+                // Only add the shape if it came from another client
+                // Skip shapes that originated from this client
+                if (message.source !== 'self') {
+                    this.existingShapes.push(parsedShape.shape);
+                    this.clearCanvas();
+                }
             }
         };
     }
@@ -96,6 +100,7 @@ export class Game {
                     shape.height
                 );
             } else if (shape.type === "circle") {
+                this.ctx.beginPath();
                 this.ctx.arc(
                     shape.centerX,
                     shape.centerY,
@@ -104,7 +109,6 @@ export class Game {
                     Math.PI * 2
                 );
                 this.ctx.stroke();
-                this.ctx.beginPath();
                 this.ctx.closePath();
             } else if (shape.type === "line") {
                 this.ctx.beginPath();
@@ -118,14 +122,18 @@ export class Game {
 
     mousedownHandler = (e: any) => {
         this.clicked = true;
-        this.startX = e.clientX;
-        this.startY = e.clientY;
+        this.startX = e.clientX - this.canvas.getBoundingClientRect().left;
+        this.startY = e.clientY - this.canvas.getBoundingClientRect().top;
     };
 
     mouseupHandler = (e: any) => {
+        if (!this.clicked) return;
+        
         this.clicked = false;
-        const width = e.clientX - this.startX;
-        const height = e.clientY - this.startY;
+        const endX = e.clientX - this.canvas.getBoundingClientRect().left;
+        const endY = e.clientY - this.canvas.getBoundingClientRect().top;
+        const width = endX - this.startX;
+        const height = endY - this.startY;
 
         // @ts-ignore
         const selectedTool = this.selectedTool;
@@ -153,8 +161,8 @@ export class Game {
                 type: "line",
                 startX: this.startX,
                 startY: this.startY,
-                endX: e.clientX - this.canvas.getBoundingClientRect().left,
-                endY: e.clientY - this.canvas.getBoundingClientRect().top,
+                endX: endX,
+                endY: endY,
             };
         }
 
@@ -162,8 +170,13 @@ export class Game {
             return;
         }
 
+        // Add the shape to our local collection
         this.existingShapes.push(shape);
+        
+        // Redraw the canvas
+        this.clearCanvas();
 
+        // Send the shape to other clients with a source indicator
         this.socket.send(
             JSON.stringify({
                 type: "chat",
@@ -171,16 +184,22 @@ export class Game {
                     shape,
                 }),
                 roomId: this.roomId,
+                source: 'self' // Add this to identify messages from this client
             })
         );
     };
 
     mousemoveHandler = (e: any) => {
         if (this.clicked) {
-            const width = e.clientX - this.startX;
-            const height = e.clientY - this.startY;
+            const endX = e.clientX - this.canvas.getBoundingClientRect().left;
+            const endY = e.clientY - this.canvas.getBoundingClientRect().top;
+            const width = endX - this.startX;
+            const height = endY - this.startY;
+            
             this.clearCanvas();
 
+            // Draw the shape being created
+            this.ctx.strokeStyle = "white";
             // @ts-ignore
             const selectedTool = this.selectedTool;
             if (selectedTool === "rect") {
@@ -189,17 +208,14 @@ export class Game {
                 const centerX = this.startX + width / 2;
                 const centerY = this.startY + height / 2;
                 const radius = Math.sqrt(width ** 2 + height ** 2) / 2;
+                this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
                 this.ctx.stroke();
-                this.ctx.beginPath();
                 this.ctx.closePath();
             } else if (selectedTool === "line") {
                 this.ctx.beginPath();
                 this.ctx.moveTo(this.startX, this.startY);
-                this.ctx.lineTo(
-                    e.clientX - this.canvas.getBoundingClientRect().left,
-                    e.clientY - this.canvas.getBoundingClientRect().top
-                );
+                this.ctx.lineTo(endX, endY);
                 this.ctx.stroke();
                 this.ctx.closePath();
             }
