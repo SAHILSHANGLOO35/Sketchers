@@ -38,6 +38,7 @@ export class Game {
     private startY = 0;
     private selectedTool: Tool = "circle";
     private currentPencilPoints: Array<{x: number, y: number}> = [];
+    private minDistance = 2; // Minimum distance between points for smoothing
     socket: WebSocket;
 
     constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket) {
@@ -51,7 +52,22 @@ export class Game {
         this.clicked = false;
 
         this.init();
+        this.setCursor();
+
     }
+
+    setCursor() {
+        if (this.selectedTool === "pencil" || this.selectedTool === "line" || 
+            this.selectedTool === "rect" || this.selectedTool === "circle") {
+          // Apply cursor directly to style
+          this.canvas.style.cursor = "crosshair";
+        } else {
+          this.canvas.style.cursor = "default";
+        }
+        
+        // Log to confirm the method is being called
+        console.log("Cursor set for tool:", this.selectedTool);
+      }
 
     destroy() {
         this.canvas.removeEventListener("mousedown", this.mousedownHandler);
@@ -61,6 +77,7 @@ export class Game {
 
     setTool(tool: "circle" | "pencil" | "rect" | "line") {
         this.selectedTool = tool;
+        this.setCursor();
     }
 
     async init() {
@@ -116,29 +133,52 @@ export class Game {
                 this.ctx.closePath();
             } else if (shape.type === "pencil") {
                 if(shape.points.length < 2) return;
-                this.ctx.beginPath();
-                
-                this.ctx.moveTo(shape.points[0].x, shape.points[0].y);
-
-                for (let i = 1; i < shape.points.length; i++) {
-                    this.ctx.lineTo(shape.points[i].x, shape.points[i].y);
-                }
-                
-                this.ctx.stroke();
-                this.ctx.closePath();
+                this.drawSmoothLine(shape.points);
             }
         });
+        
         if (this.selectedTool === "pencil" && this.clicked && this.currentPencilPoints.length >= 2) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(this.currentPencilPoints[0].x, this.currentPencilPoints[0].y);
-            
-            for (let i = 1; i < this.currentPencilPoints.length; i++) {
-                this.ctx.lineTo(this.currentPencilPoints[i].x, this.currentPencilPoints[i].y);
+            this.drawSmoothLine(this.currentPencilPoints);
+        }
+    }
+
+    drawSmoothLine(points: Array<{x: number, y: number}>) {
+        if (points.length < 2) return;
+        
+        this.ctx.beginPath();
+        this.ctx.lineWidth = 2; // Thicker line for smoother appearance
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+        
+        // Start from the first point
+        this.ctx.moveTo(points[0].x, points[0].y);
+        
+        // For the first segment, just draw a line
+        if (points.length === 2) {
+            this.ctx.lineTo(points[1].x, points[1].y);
+        } else {
+            // For multiple points, create smooth curves
+            for (let i = 1; i < points.length - 1; i++) {
+                // Calculate control points for a quadratic curve
+                const xc = (points[i].x + points[i+1].x) / 2;
+                const yc = (points[i].y + points[i+1].y) / 2;
+                
+                // Use quadraticCurveTo for a smooth transition
+                this.ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
             }
             
-            this.ctx.stroke();
-            this.ctx.closePath();
+            // Connect to the last point
+            const last = points.length - 1;
+            this.ctx.quadraticCurveTo(
+                points[last-1].x, 
+                points[last-1].y, 
+                points[last].x, 
+                points[last].y
+            );
         }
+        
+        this.ctx.stroke();
+        this.ctx.closePath();
     }
 
     mousedownHandler = (e: any) => {
@@ -147,7 +187,7 @@ export class Game {
         this.startY = e.clientY - this.canvas.getBoundingClientRect().top;
 
         if(this.selectedTool === "pencil") {
-            this.currentPencilPoints = [{x: this.startX, y: this.startY}]
+            this.currentPencilPoints = [{x: this.startX, y: this.startY}];
         }
     };
 
@@ -192,7 +232,7 @@ export class Game {
         } else if (selectedTool === "pencil") {
             const lastPoint = this.currentPencilPoints[this.currentPencilPoints.length -1];
             if(lastPoint.x !== endX || lastPoint.y !== endY) {
-                this.currentPencilPoints.push({x: endX, y: endY})
+                this.currentPencilPoints.push({x: endX, y: endY});
             }
 
             if (this.currentPencilPoints.length >= 2) {
@@ -229,17 +269,30 @@ export class Game {
 
     mousemoveHandler = (e: any) => {
         if (this.clicked) {
-            const endX = e.clientX - this.canvas.getBoundingClientRect().left;
-            const endY = e.clientY - this.canvas.getBoundingClientRect().top;
-            const width = endX - this.startX;
-            const height = endY - this.startY;
+            const currentX = e.clientX - this.canvas.getBoundingClientRect().left;
+            const currentY = e.clientY - this.canvas.getBoundingClientRect().top;
+            const width = currentX - this.startX;
+            const height = currentY - this.startY;
 
             // @ts-ignore
             const selectedTool = this.selectedTool;
 
             if(selectedTool === "pencil") {
-                // @ts-ignore
-                this.currentPencilPoints.push({x: endX, y: endY});
+                if (this.currentPencilPoints.length > 0) {
+                    const lastPoint = this.currentPencilPoints[this.currentPencilPoints.length - 1];
+                    
+                    // Only add points that are a minimum distance away to reduce jitter
+                    const dx = currentX - lastPoint.x;
+                    const dy = currentY - lastPoint.y;
+                    const distance = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (distance >= this.minDistance) {
+                        this.currentPencilPoints.push({x: currentX, y: currentY});
+                    }
+                } else {
+                    this.currentPencilPoints.push({x: currentX, y: currentY});
+                }
+                
                 this.clearCanvas();
                 return;
             }
@@ -260,7 +313,7 @@ export class Game {
             } else if (selectedTool === "line") {
                 this.ctx.beginPath();
                 this.ctx.moveTo(this.startX, this.startY);
-                this.ctx.lineTo(endX, endY);
+                this.ctx.lineTo(currentX, currentY);
                 this.ctx.stroke();
                 this.ctx.closePath();
             }

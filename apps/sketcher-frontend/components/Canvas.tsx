@@ -16,6 +16,39 @@ export function Canvas({
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [selectedTool, setSelectedTool] = useState<Tool>("circle");
     const [game, setGame] = useState<Game>();
+    const [dimensions, setDimensions] = useState({
+        width: window.innerWidth,
+        height: window.innerHeight
+    });
+
+    // Update dimensions when window resizes
+    useEffect(() => {
+        const handleResize = () => {
+            setDimensions({
+                width: window.innerWidth,
+                height: window.innerHeight
+            });
+            
+            // Update canvas size directly too
+            if (canvasRef.current) {
+                canvasRef.current.width = window.innerWidth;
+                canvasRef.current.height = window.innerHeight;
+                
+                // Redraw everything after resize
+                game?.clearCanvas();
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        
+        // Initial setup
+        handleResize();
+        
+        // Cleanup
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, [game]);
 
     useEffect(() => {
         // @ts-ignore
@@ -24,6 +57,10 @@ export function Canvas({
 
     useEffect(() => {
         if (canvasRef.current) {
+            // Set initial canvas dimensions
+            canvasRef.current.width = dimensions.width;
+            canvasRef.current.height = dimensions.height;
+            
             const g = new Game(canvasRef.current, roomId, socket);
             setGame(g);
 
@@ -31,15 +68,12 @@ export function Canvas({
                 g.destroy();
             }
         }
-
-    }, [canvasRef]);
+    }, [canvasRef, roomId, socket]);
 
     return (
         <div className="overflow-hidden h-screen text-white">
             <canvas
                 ref={canvasRef}
-                width={window.innerWidth}
-                height={window.innerHeight}
                 className="fixed top-0 left-0 w-full h-full"
             ></canvas>
             <TopBar
@@ -55,7 +89,7 @@ function TopBar({
     setSelectedTool,
 }: {
     selectedTool: Tool;
-    setSelectedTool: (s: Tool) => void;
+    setSelectedTool: (t: Tool) => void;
 }) {
     return (
         <div
